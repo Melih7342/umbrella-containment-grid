@@ -1,0 +1,53 @@
+[
+  {
+    "room_name": "B4-TYRANT-LAB",
+    "motion_num": 2,
+    "temp_num": 1,
+    "temp_baseline": 15.0
+  },
+  {
+    "room_name": "Chemical Experiment Room",
+    "motion_num": 2,
+    "temp_num": 1,
+    "temp_baseline": 18.5,
+    "pressure_num": 1,
+    "pressure_baseline": 1013.0
+  },
+  {
+    "room_name": "Power Room",
+    "temp_num": 1,
+    "temp_baseline": 45.0,
+    "moist_num": 1,
+    "moist_baseline": 30.0
+  },
+  {
+    "room_name": "Visual Data Room",
+    "temp_num": 2,
+    "temp_baseline": 22.0,
+    "moist_num": 2,
+    "moist_baseline": 40.0
+  },
+  {
+    "room_name": "West Area",
+    "motion_num": 1,
+    "temp_num": 1,
+    "temp_baseline": 20.0,
+    "moist_num": 1,
+    "moist_baseline": 50.0
+  },
+  {
+    "room_name": "East Area",
+    "motion_num": 1,
+    "temp_num": 1,
+    "temp_baseline": 20.0,
+    "moist_num": 1,
+    "moist_baseline": 50.0
+  },
+  {
+    "room_name": "Waste Disposal Plant",
+    "temp_num": 2,
+    "temp_baseline": 25.0,
+    "moist_num": 2,
+    "moist_baseline": 85.0
+  }
+]
