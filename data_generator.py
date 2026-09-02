@@ -1,40 +1,67 @@
 import os
 import json
 import random
+import pika
 import time
 from datetime import datetime, timezone
 
 def data_generator():
+    print("Initializing the sensors...")
     active_sensors = initializeSensors("rooms.json")
-    while True:
-        for sensor in active_sensors:
-            sensor_id = sensor["sensor_id"]
-            room = sensor["room"]
-            sensor_type = sensor["type"]
-            baseline = sensor["baseline"]
-            timestamp = datetime.now(timezone.utc).isoformat()
+
+    HOST = "localhost"
+    PORT = 5672
+
+    credentials = pika.PlainCredentials("admin", "secret")
+
+    parameters = pika.ConnectionParameters(
+        host=HOST,
+        port=PORT,
+        virtual_host="/",
+        credentials=credentials
+        )
+
+    print("Building the connection...")
+    connection = pika.BlockingConnection(parameters)
+
+    print("Opening the connection channel...")
+    channel = connection.channel()
+
+    print("Declaring the exchange...")
+    channel.exchange_declare(exchange='umbrella_sensors', exchange_type='topic')
+    try:
+        while True:
+            for sensor in active_sensors:
+                sensor_id = sensor["sensor_id"]
+                room = sensor["room"]
+                sensor_type = sensor["type"]
+                baseline = sensor["baseline"]
+                timestamp = datetime.now(timezone.utc).isoformat()
 
 
-            if sensor_type in ["TEMP", "MOIST", "PRESSURE"]:
-                value = round(random.gauss(baseline, 1.0), 2)
-            else:
-                if random.random() < 0.05:
-                    value = 1
+                if sensor_type in ["TEMP", "MOIST", "PRESSURE"]:
+                    value = round(random.gauss(baseline, 1.0), 2)
                 else:
-                    value = 0
+                    if random.random() < 0.05:
+                        value = 1
+                    else:
+                        value = 0
 
-            data_point = {
-                "timestamp": timestamp,
-                "sensor_id": sensor_id,
-                "room": room,
-                "type": sensor_type,
-                "value": value
-            }
+                data_point = {
+                    "timestamp": timestamp,
+                    "sensor_id": sensor_id,
+                    "room": room,
+                    "type": sensor_type,
+                    "value": value
+                }
 
-            print(json.dumps(data_point))
-
-
-        time.sleep(random.uniform(0.5, 2.0))
+                routing_key = f"sensors.{sensor_type.lower()}.{room.replace(' ', '_').lower()}"
+                channel.basic_publish(exchange='umbrella_sensors', routing_key=routing_key, body=json.dumps(data_point))
+                print(f"[x] Sent: {routing_key} -> {value}")
+    except KeyboardInterrupt:
+            print("\n[!] Shutting down the labaratory. Closing the connection...")
+            
+            time.sleep(random.uniform(0.5, 2.0))
 
 
 def initializeSensors(filepath):
