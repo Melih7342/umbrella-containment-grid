@@ -1,4 +1,3 @@
-import os
 import json
 import random
 import pika
@@ -31,6 +30,7 @@ def data_generator():
     channel.exchange_declare(exchange='umbrella_sensors', exchange_type='topic')
     try:
         while True:
+            random.shuffle(active_sensors)
             for sensor in active_sensors:
                 sensor_id = sensor["sensor_id"]
                 room = sensor["room"]
@@ -58,10 +58,12 @@ def data_generator():
                 routing_key = f"sensors.{sensor_type.lower()}.{room.replace(' ', '_').lower()}"
                 channel.basic_publish(exchange='umbrella_sensors', routing_key=routing_key, body=json.dumps(data_point))
                 print(f"[x] Sent: {routing_key} -> {value}")
+
+                time.sleep(random.uniform(0.5, 2.0))
+
     except KeyboardInterrupt:
             print("\n[!] Shutting down the labaratory. Closing the connection...")
             
-            time.sleep(random.uniform(0.5, 2.0))
 
 
 def initializeSensors(filepath):
