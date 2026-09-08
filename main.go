@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -10,13 +11,15 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+const policeAddress = "http://localhost:8083/alert"
+
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 	}
 }
 
-func dispatchPoliceAlert(sensorEvent SensorData, msg string, severity string, policeAddress string) {
+func dispatchPoliceAlert(sensorEvent SensorData, msg string, severity Severity, policeAddress string) {
 	policeAlert := PoliceAlert{
 		SensorData: sensorEvent,
 		Message:    msg,
@@ -104,9 +107,15 @@ func main() {
 				if data.Value == 1.0 {
 					switch data.Room {
 					case "B4-TYRANT-LAB":
-						log.Printf("[!!!] CRITICAL BREACH: Unauthorized movement detected in B4-TYRANT-LAB! Sensor: %s", data.SensorID)
+						msg := fmt.Sprintf("Unauthorized movement detected in B4-TYRANT-LAB! Sensor: %s", data.SensorID)
+						log.Printf("[!!!] CRITICAL BREACH: %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityCritical, policeAddress)
+
 					case "Chemical Experiment Room":
-						log.Printf("[!] SECURITY: Movement in restricted Chemical Area! Sensor: %s", data.SensorID)
+						msg := fmt.Sprintf("Movement in restricted Chemical Area! Sensor: %s", data.SensorID)
+						log.Printf("[!] SECURITY: %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityWarning, policeAddress)
+
 					default:
 						log.Printf("[INFO] Routine movement tracked in %s (Sensor: %s)", data.Room, data.SensorID)
 					}
@@ -116,23 +125,27 @@ func main() {
 				switch data.Room {
 				case "B4-TYRANT-LAB":
 					if data.Value > 18.5 {
-						// Baseline 15.0 -> >18.0 means cryogenic cooling is failing
-						log.Printf("[!!!] ALARM: B4-TYRANT-LAB temperature critical! Specimen thawing risk (%.2f°C)", data.Value)
+						msg := fmt.Sprintf("B4-TYRANT-LAB temperature critical! Specimen thawing risk (%.2f°C)", data.Value)
+						log.Printf("[!!!] ALARM: %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityCritical, policeAddress)
 					}
 				case "Power Room":
 					if data.Value > 48.0 {
-						// Baseline 45.0 -> Overheating
-						log.Printf("[WARNING] Power Room overheating! Generator stress detected (%.2f°C)", data.Value)
+						msg := fmt.Sprintf("Power Room overheating! Generator stress detected (%.2f°C)", data.Value)
+						log.Printf("[WARNING] %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityWarning, policeAddress)
 					}
 				case "Chemical Experiment Room":
 					if data.Value > 21.0 || data.Value < 15.0 {
-						// Baseline 18.5 -> Chemical volatility
-						log.Printf("[WARNING] Chemical Experiment Room temperature unstable! (%.2f°C)", data.Value)
+						msg := fmt.Sprintf("Chemical Experiment Room temperature unstable! (%.2f°C)", data.Value)
+						log.Printf("[WARNING] %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityWarning, policeAddress)
 					}
 				case "Visual Data Room":
 					if data.Value > 25.0 {
-						// Baseline 22.0 -> Server overheating
-						log.Printf("[WARNING] Visual Data Room servers at thermal risk! (%.2f°C)", data.Value)
+						msg := fmt.Sprintf("Visual Data Room servers at thermal risk! (%.2f°C)", data.Value)
+						log.Printf("[WARNING] %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityWarning, policeAddress)
 					}
 				}
 
@@ -140,29 +153,35 @@ func main() {
 				switch data.Room {
 				case "Power Room":
 					if data.Value > 33.5 {
-						// Baseline 30.0 -> Danger of electrical short
-						log.Printf("[!!!] ALARM: High humidity in Power Room! Short circuit risk (%.2f%%)", data.Value)
+						msg := fmt.Sprintf("High humidity in Power Room! Short circuit risk (%.2f%%)", data.Value)
+						log.Printf("[!!!] ALARM: %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityCritical, policeAddress)
 					}
 				case "Waste Disposal Plant":
 					if data.Value > 88.0 {
-						// Baseline 85.0 -> Overflow/Leakage
-						log.Printf("[WARNING] Waste Disposal Plant moisture overflow risk (%.2f%%)", data.Value)
+						msg := fmt.Sprintf("Waste Disposal Plant moisture overflow risk (%.2f%%)", data.Value)
+						log.Printf("[WARNING] %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityWarning, policeAddress)
 					}
 				case "Visual Data Room":
 					if data.Value > 43.0 {
-						// Baseline 40.0 -> Hardware corrosion risk
-						log.Printf("[WARNING] Elevated humidity near server racks in Visual Data Room (%.2f%%)", data.Value)
+						msg := fmt.Sprintf("Elevated humidity near server racks in Visual Data Room (%.2f%%)", data.Value)
+						log.Printf("[WARNING] %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityWarning, policeAddress)
 					}
 				}
 
 			case "PRESSURE":
 				if data.Room == "Chemical Experiment Room" {
 					if data.Value > 1016.5 {
-						// Baseline 1013.0 -> Explosion risk
-						log.Printf("[!!!] ALARM: High pressure in Chemical Experiment Room! Venting required (%.2f hPa)", data.Value)
+						msg := fmt.Sprintf("High pressure in Chemical Experiment Room! Venting required (%.2f hPa)", data.Value)
+						log.Printf("[!!!] ALARM: %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityCritical, policeAddress)
+
 					} else if data.Value < 1009.5 {
-						// Baseline 1013.0 -> Containment leak
-						log.Printf("[!!!] ALARM: Pressure drop in Chemical Experiment Room! Containment leak? (%.2f hPa)", data.Value)
+						msg := fmt.Sprintf("Pressure drop in Chemical Experiment Room! Containment leak? (%.2f hPa)", data.Value)
+						log.Printf("[!!!] ALARM: %s", msg)
+						dispatchPoliceAlert(data, msg, SeverityCritical, policeAddress)
 					}
 				}
 				d.Ack(false)
